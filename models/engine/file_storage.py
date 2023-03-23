@@ -1,95 +1,78 @@
 #!/usr/bin/python3
-"""This module defines a class to manage file storage for hbnb clone"""
+'''
+    Define class FileStorage
+'''
 import json
-import datetime
-from models.base_model import BaseModel
-from models.user import User
-from models.state import State
-from models.city import City
-from models.amenity import Amenity
-from models.place import Place
-from models.review import Review
+import models
 
 
 class FileStorage:
-    """This class manages storage of hbnb models in JSON format"""
-    __file_path = 'file.json'
+    '''
+        Serializes instances to JSON file and deserializes to JSON file.
+    '''
+    __file_path = "file.json"
     __objects = {}
 
     def all(self, cls=None):
-        """Returns a dictionary of models currently in storage"""
-        if cls:
-            return {key: obj for (key, obj) in self.__objects.items()
-                    if isinstance(obj, cls)}
-        return self.__objects
+        '''
+            Return the dictionary
+        '''
+        obje = {}
+        if cls is None:
+            return (self.__objects)
+        else:
+            new = {obj: key for obj, key in self.__objects.items()
+                   if type(key) == cls}
+            return (new)
 
     def new(self, obj):
-        """Adds new object to storage dictionary"""
-        if obj:
-            key = "{}.{}".format(type(obj).__name__, obj.id)
-            self.__objects[key] = obj
+        '''
+            Set in __objects the obj with key <obj class name>.id
+            Aguments:
+                obj : An instance object.
+        '''
+        key = str(obj.__class__.__name__) + "." + str(obj.id)
+        value_dict = obj
+        FileStorage.__objects[key] = value_dict
 
     def save(self):
-        """Saves storage dictionary to file"""
+        '''
+            Serializes __objects attribute to JSON file.
+        '''
         objects_dict = {}
-        for key, val in self.__objects.items():
-            objects_dict[key] = value.to_dict()
+        for key, val in FileStorage.__objects.items():
+            objects_dict[key] = val.to_dict()
 
-        with open(self.__file_path, 'w', encoding="UTF-8") as fd:
+        with open(FileStorage.__file_path, mode='w', encoding="UTF8") as fd:
             json.dump(objects_dict, fd)
 
+    def delete(self, obj=None):
+        """
+        Public instance method to delete obj from the __objects
+        """
+        if not obj:
+            return
+        key = '{}.{}'.format(type(obj).__name__, obj.id)
+        if key in FileStorage.__objects:
+            del FileStorage.__objects[key]
+            self.save()
+
     def reload(self):
-        """Deserialize json file"""
+        '''
+            Deserializes the JSON file to __objects.
+        '''
         try:
-            with open(self.__file_path, encoding="UTF-8") as fd:
-                for key, value in (json.load(fd)).items():
-                    value = eval(value["__class__"])(**value)
-                    self.__objects[key] = value
+            with open(FileStorage.__file_path, encoding="UTF8") as fd:
+                FileStorage.__objects = json.load(fd)
+            for key, val in FileStorage.__objects.items():
+                class_name = val["__class__"]
+                class_name = models.classes[class_name]
+                FileStorage.__objects[key] = class_name(**val)
         except FileNotFoundError:
             pass
 
-    def delete(self, obj=None):
-        """Deletes an object"""
-        if obj:
-            key = "{}.{}".format(type(obj).__name__, obj.id)
-            if (key, obj) in self.__objects.items():
-                self.__objects.pop(key, None)
-        self.save()
-
     def close(self):
-        """Deserializes JSON file to objects"""
+        """
+        calls reload() for deserializing the JSON file to object
+        """
         self.reload()
-
-    def classes(self):
-        """Return dict repr"""
-        from models.base_model import BaseModel
-        from models.user import User
-        from models.state import State
-        from models.city import City
-        from models.amenity import Amenity
-        from models.place import Place
-        from models.review import Review
-
-        classes = {"BaseModel": BaseModel, "User": User, "State": State,
-                   "City": City, "Amenity": Amenity, "Place": Place,
-                   "Review": Review}
-        return classes
-
-    def attributes(self):
-        """Returns valid attributes"""
-        attributes = {"BaseModel": {"id": str,
-                                    "created_at": datetime.datetime,
-                                    "updated_at": datetime.datetime},
-                      "User": {"email": str, "password": str,
-                               "first_name": str, "last_name": str},
-                      "State": {"name": str},
-                      "City": {"state_id": str, "name": str},
-                      "Amenity": {"name": str},
-                      "Place": {"city_id": str, "user_id": str, "name": str,
-                                "description": str, "number_rooms": int,
-                                "number_bathrooms": int, "max_guest": int,
-                                "price_by_night": int, "latitude": float,
-                                "longitude": float, "amenity_ids": list},
-                      "Review": {"place_id": str, "user_id": str, "text": str}
-                      }
-        return attributes
