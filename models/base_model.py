@@ -3,7 +3,6 @@
 """This is the base model class for AirBnB"""
 from sqlalchemy.ext.declarative import declarative_base
 import uuid
-import models
 from datetime import datetime
 from sqlalchemy import Column, Integer, String, DateTime
 from models import storage_type
